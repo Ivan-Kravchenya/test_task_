@@ -1,0 +1,5 @@
+counter logstash_log_level_total by level
+
+/^\[(\w+)\]/ {
+  logstash_log_level_total[$1]++
+}

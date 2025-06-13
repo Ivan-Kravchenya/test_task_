@@ -1,0 +1,21 @@
+input {
+  exec {
+    command => "docker logs --since 60s prometheus 2>&1"
+    interval => 60
+    tags => ["docker", "prometheus"]
+  }
+
+  exec {
+    command => "docker logs --since 60s $(docker ps --filter name=node-exporter --format {{ '{{.Names}}' }}) 2>&1"
+    interval => 60
+    tags => ["docker", "node-exporter"]
+  }
+}
+
+output {
+  file {
+    path => "/var/log/test/containers.log"
+    codec => line { format => "[%{tags}] %{message}" }
+  }
+}
+

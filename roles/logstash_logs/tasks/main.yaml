@@ -1,0 +1,69 @@
+---
+- name: check docker group exists
+  group:
+    name: docker
+    state: present
+
+- name: Add logstash user to docker group
+  user:
+    name: logstash
+    groups: docker
+    append: yes
+
+- name: Ensure log directory exists
+  file:
+    path: /var/log/test
+    state: directory
+    owner: logstash
+    group: logstash
+    mode: '0755'
+
+- name: Install Java and dependencies
+  become: true
+  dnf:
+    name:
+      - java-17-openjdk
+    state: present
+    update_cache: true
+
+- name: Add Logstash rep GPG key
+  get_url:
+    url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+    dest: /etc/pki/rpm-gpg/GPG-KEY-elasticsearch
+
+- name: pulling logstash GPG key
+  rpm_key:
+    key: /etc/pki/rpm-gpg/GPG-KEY-elasticsearch
+    state: present
+
+- name: Conf Logstash repo
+  copy:
+    dest: /etc/yum.repos.d/logstash.repo
+    content: |
+      [logstash]
+      name=Elastic repository for Logstash
+      baseurl=https://artifacts.elastic.co/packages/8.x/yum
+      gpgcheck=1
+      gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+      enabled=1
+      autorefresh=1
+      type=rpm-md
+
+- name: Install Logstash
+  dnf:
+    name: logstash
+    state: present
+
+- name: logstash config
+  template:
+    src: docker-logs.conf.j2
+    dest: /etc/logstash/conf.d/docker-logs.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: enable and start Logstash
+  systemd:
+    name: logstash
+    enabled: yes
+    state: restarted

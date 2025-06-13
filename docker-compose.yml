@@ -1,0 +1,48 @@
+services:
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    user: '0'
+    ports:
+      - '80:3000'
+    volumes:
+      - './data:/var/lib/grafana'
+    networks:
+      - localprom
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - './prometheus.yml:/etc/prometheus/prometheus.yml'  # Prometheus config file
+    networks:
+      - localprom
+    ports:
+      - '9090:9090'
+
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    networks:
+      - localprom
+    ports:
+      - '9100:9100'
+    
+
+  mtail:
+    image: ghcr.io/google/mtail
+    container_name: mtail
+    ports:
+      - "3903:3903"
+    volumes:
+      - ./logstash.mtail:/programs/logstash.mtail:ro
+      - /var/log/logstash/logstash-plain.log:/var/log/logstash/logstash-plain.log:ro
+    command: ["-progs", "/programs/logstash.mtail", "-logs", "/var/log/logstash/logstash-plain.log"]
+    networks:
+      - localprom
+
+networks:
+  localprom:
+    driver: bridge

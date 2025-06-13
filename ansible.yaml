@@ -1,0 +1,6 @@
+---
+- name: Set up Logstash for Docker logs
+  hosts: localhost
+  become: true
+  roles:
+    - logstash_logs
